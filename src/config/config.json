@@ -1,0 +1,16 @@
+{
+  "server": {
+    "port": 80
+  },
+  "session": {
+    "tokenKey": "f5152545ed05ecaa974bb023d90cb979d3265413f8d84988d48ecae89830370f",
+    "timeout": 300
+  },
+  "db": {
+    "dbConfigOptions": {
+      "useNewUrlParser": true,
+      "useUnifiedTopology": true
+    },
+    "connectionString": "mongodb://127.0.0.1/WE2"
+  }
+}
