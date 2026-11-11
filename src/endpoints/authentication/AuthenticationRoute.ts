@@ -10,7 +10,7 @@ function sendAuthFailed(res: Response): void {
 
 router.get("/", async (req, res) => {
     const header = req.headers.authorization;
-    if (!header || !header.startsWith("Basic ")) {
+    if (!header?.startsWith("Basic ")) {
         return sendAuthFailed(res);
     }
 

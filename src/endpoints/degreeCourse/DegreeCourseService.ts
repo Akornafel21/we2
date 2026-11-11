@@ -44,12 +44,9 @@ function applyFields(course: HydratedDocument<IDegreeCourse>, data: Record<strin
 }
 
 export async function getDegreeCourses(query: Record<string, unknown>) {
-    const filter: Record<string, string> = {};
-    for (const key of FIELDS) {
-        if (typeof query[key] === "string") {
-            filter[key] = query[key] as string;
-        }
-    }
+    const filter = Object.fromEntries(
+        Object.entries(query).filter(([key, value]) => FIELDS.includes(key) && typeof value === "string")
+    );
     const courses = await DegreeCourse.find(filter);
     return courses.map(toResponse);
 }

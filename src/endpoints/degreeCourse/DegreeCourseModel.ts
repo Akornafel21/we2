@@ -1,4 +1,3 @@
-// src/endpoints/degreeCourse/DegreeCourseModel.ts
 import { Schema, model } from "mongoose";
 
 export interface IDegreeCourse {

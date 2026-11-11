@@ -18,7 +18,6 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
     next();
 });
 
-// Reihenfolge wichtig: Routen vor dem 404-Handler
 app.use("/api/publicUsers", publicUsersRoute);
 app.use("/api/users", userRoute);
 app.use("/api/authenticate", authenticationRoute);

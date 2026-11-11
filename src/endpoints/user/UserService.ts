@@ -1,4 +1,3 @@
-// src/endpoints/user/UserService.ts
 import { User, UserDocument } from "./UserModel";
 import { TokenPayload } from "../authentication/AuthenticationService";
 import { NotFoundError, ForbiddenError, ValidationError, rethrowAsValidationError } from "../../utils/Errors";
@@ -17,7 +16,7 @@ function toResponse(user: UserDocument) {
     };
 }
 
-// Antwort für /publicUsers: mit Passwort-Hash (nur für die automatisierten Tests)
+// Antwort für /publicUsers: mit Passwort-Hash
 function toPublicResponse(user: UserDocument) {
     return { ...toResponse(user), password: user.password };
 }
@@ -93,7 +92,7 @@ export async function deleteUser(userID: string): Promise<void> {
     }
 }
 
-// ---------- /publicUsers: ohne Authentifizierung ----------
+// /publicUsers: ohne Authentifizierung
 
 export async function getPublicUsers() {
     const users = await User.find();
@@ -112,7 +111,7 @@ export async function updatePublicUser(userID: string, data: Record<string, unkn
     return toPublicResponse(await saveUserChanges(userID, data, ADMIN_EDITABLE));
 }
 
-// ---------- /users: mit Authentifizierung und Autorisierung ----------
+// /users: mit Authentifizierung und Autorisierung
 
 export async function getUsers() {
     const users = await User.find();
