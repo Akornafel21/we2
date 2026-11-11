@@ -2,11 +2,24 @@ import { User, UserDocument } from "./UserModel";
 import { TokenPayload } from "../authentication/AuthenticationService";
 import { NotFoundError, ForbiddenError, ValidationError, rethrowAsValidationError } from "../../utils/Errors";
 
-const SELF_EDITABLE = ["firstName", "lastName", "password"];
-const ADMIN_EDITABLE = [...SELF_EDITABLE, "isAdministrator"];
-
 // Antwort für /users: ohne Passwort
-function toResponse(user: UserDocument) {
+export interface UserResponse {
+    id: string;
+    userID: string;
+    firstName?: string;
+    lastName?: string;
+    isAdministrator: boolean;
+}
+
+// Antwort für /publicUsers: mit Passwort-Hash 
+export interface PublicUserResponse extends UserResponse {
+    password: string;
+}
+
+const SELF_EDITABLE: string[] = ["firstName", "lastName", "password"];
+const ADMIN_EDITABLE: string[] = [...SELF_EDITABLE, "isAdministrator"];
+
+function toResponse(user: UserDocument): UserResponse {
     return {
         id: user._id.toString(),
         userID: user.userID,
@@ -16,8 +29,7 @@ function toResponse(user: UserDocument) {
     };
 }
 
-// Antwort für /publicUsers: mit Passwort-Hash
-function toPublicResponse(user: UserDocument) {
+function toPublicResponse(user: UserDocument): PublicUserResponse {
     return { ...toResponse(user), password: user.password };
 }
 
@@ -28,7 +40,7 @@ function checkSelfOrAdmin(userID: string, requester: TokenPayload): void {
 }
 
 async function findUserOrThrow(userID: string): Promise<UserDocument> {
-    const user = await User.findOne({ userID });
+    const user: UserDocument | null = await User.findOne({ userID });
     if (!user) {
         throw new NotFoundError(`Es konnte kein User mit der ID ${userID} gefunden werden.`);
     }
@@ -51,14 +63,14 @@ function applyFields(user: UserDocument, data: Record<string, unknown>, allowedF
 }
 
 async function saveNewUser(data: Record<string, unknown>): Promise<UserDocument> {
-    const userID = data.userID;
+    const userID: unknown = data.userID;
     if (typeof userID !== "string" || userID.trim() === "") {
         throw new ValidationError("userID is required");
     }
     if (await User.exists({ userID })) {
         throw new ValidationError(`User ${userID} already exists`);
     }
-    const user = new User({ userID });
+    const user: UserDocument = new User({ userID });
     applyFields(user, data, ADMIN_EDITABLE);
     await user.save().catch(rethrowAsValidationError);
     return user;
@@ -72,7 +84,7 @@ async function saveUserChanges(
     if (data.userID !== undefined && data.userID !== userID) {
         throw new ValidationError("The userID cannot be changed");
     }
-    const user = await findUserOrThrow(userID);
+    const user: UserDocument = await findUserOrThrow(userID);
     applyFields(user, data, allowedFields);
     await user.save().catch(rethrowAsValidationError);
     return user;
@@ -86,49 +98,53 @@ export async function ensureDefaultAdmin(): Promise<void> {
 }
 
 export async function deleteUser(userID: string): Promise<void> {
-    const result = await User.deleteOne({ userID });
+    const result: { deletedCount: number } = await User.deleteOne({ userID });
     if (result.deletedCount === 0) {
         throw new NotFoundError(`Es konnte kein User mit der ID ${userID} gefunden werden.`);
     }
 }
 
-// /publicUsers: ohne Authentifizierung
+// /publicUsers: ohne Authentifizierung 
 
-export async function getPublicUsers() {
-    const users = await User.find();
+export async function getPublicUsers(): Promise<PublicUserResponse[]> {
+    const users: UserDocument[] = await User.find();
     return users.map(toPublicResponse);
 }
 
-export async function getPublicUser(userID: string) {
+export async function getPublicUser(userID: string): Promise<PublicUserResponse> {
     return toPublicResponse(await findUserOrThrow(userID));
 }
 
-export async function createPublicUser(data: Record<string, unknown>) {
+export async function createPublicUser(data: Record<string, unknown>): Promise<PublicUserResponse> {
     return toPublicResponse(await saveNewUser(data));
 }
 
-export async function updatePublicUser(userID: string, data: Record<string, unknown>) {
+export async function updatePublicUser(userID: string, data: Record<string, unknown>): Promise<PublicUserResponse> {
     return toPublicResponse(await saveUserChanges(userID, data, ADMIN_EDITABLE));
 }
 
 // /users: mit Authentifizierung und Autorisierung
 
-export async function getUsers() {
-    const users = await User.find();
+export async function getUsers(): Promise<UserResponse[]> {
+    const users: UserDocument[] = await User.find();
     return users.map(toResponse);
 }
 
-export async function getUser(userID: string, requester: TokenPayload) {
+export async function getUser(userID: string, requester: TokenPayload): Promise<UserResponse> {
     checkSelfOrAdmin(userID, requester);
     return toResponse(await findUserOrThrow(userID));
 }
 
-export async function createUser(data: Record<string, unknown>) {
+export async function createUser(data: Record<string, unknown>): Promise<UserResponse> {
     return toResponse(await saveNewUser(data));
 }
 
-export async function updateUser(userID: string, data: Record<string, unknown>, requester: TokenPayload) {
+export async function updateUser(
+    userID: string,
+    data: Record<string, unknown>,
+    requester: TokenPayload
+): Promise<UserResponse> {
     checkSelfOrAdmin(userID, requester);
-    const allowedFields = requester.isAdministrator ? ADMIN_EDITABLE : SELF_EDITABLE;
+    const allowedFields: string[] = requester.isAdministrator ? ADMIN_EDITABLE : SELF_EDITABLE;
     return toResponse(await saveUserChanges(userID, data, allowedFields));
 }

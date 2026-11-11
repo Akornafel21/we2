@@ -7,7 +7,7 @@ function sendNotAuthorized(res: Response): void {
 
 export function isAuthenticated(req: Request, res: Response, next: NextFunction): void {
     const header = req.headers.authorization;
-    if (!header || !header.startsWith("Bearer ")) {
+    if (!header?.startsWith("Bearer ")) {
         return sendNotAuthorized(res);
     }
     const payload = verifyToken(header.slice(7));
