@@ -1,6 +1,10 @@
 {
   "server": {
-    "port": 80
+    "port": 443,
+    "https": {
+      "keyPath": "certs/key.pem",
+      "certPath": "certs/cert.pem"
+    }
   },
   "session": {
     "tokenKey": "f5152545ed05ecaa974bb023d90cb979d3265413f8d84988d48ecae89830370f",

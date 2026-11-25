@@ -1,3 +1,6 @@
+import fs from "fs";
+import https from "https";
+import path from "path";
 import express, { Express, Request, Response, NextFunction } from "express";
 import config from "./config/config.json";
 import { connectDatabase } from "./database/Database";
@@ -5,6 +8,7 @@ import publicUsersRoute from "./endpoints/user/PublicUsersRoute";
 import userRoute from "./endpoints/user/UserRoute";
 import authenticationRoute from "./endpoints/authentication/AuthenticationRoute";
 import degreeCourseRoute from "./endpoints/degreeCourse/DegreeCourseRoute";
+import degreeCourseApplicationRoute from "./endpoints/degreeCourseApplication/DegreeCourseApplicationRoute";
 import { ensureDefaultAdmin } from "./endpoints/user/UserService";
 
 const app: Express = express();
@@ -23,6 +27,7 @@ app.use("/api/publicUsers", publicUsersRoute);
 app.use("/api/users", userRoute);
 app.use("/api/authenticate", authenticationRoute);
 app.use("/api/degreeCourses", degreeCourseRoute);
+app.use("/api/degreeCourseApplications", degreeCourseApplicationRoute);
 
 app.use((_req: Request, res: Response): void => {
     res.status(404).json({ Error: "Endpoint not existing" });
@@ -37,14 +42,30 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction): void =>
     res.status(500).json({ Error: "Internal server error" });
 });
 
+function createHttpsServer(): https.Server {
+    const projectRoot: string = path.resolve(__dirname, "..");
+    const options: https.ServerOptions = {
+        key: fs.readFileSync(path.join(projectRoot, config.server.https.keyPath)),
+        cert: fs.readFileSync(path.join(projectRoot, config.server.https.certPath)),
+        minVersion: "TLSv1.2",
+    };
+    return https.createServer(options, app);
+}
+
 async function start(): Promise<void> {
     await connectDatabase();
     await ensureDefaultAdmin();
-    app.listen(config.server.port, (): void => {
-        console.log(`Server is running on port ${config.server.port}`);
+    const server: https.Server = createHttpsServer();
+    server.on("error", (err: Error): void => {
+        console.error("HTTPS server error:", err.message);
+        process.exit(1);
+    });
+    server.listen(config.server.port, (): void => {
+        console.log(`HTTPS server is running on https://localhost:${config.server.port}`);
     });
 }
 
 start().catch((err: Error): void => {
     console.error("Failed to start server:", err.message);
+    process.exit(1);
 });

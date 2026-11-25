@@ -7,6 +7,7 @@
     "start": "ts-node ./src/httpServer.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint .",
+    "cert": "openssl req -x509 -newkey rsa:2048 -nodes -sha256 -days 365 -keyout certs/key.pem -out certs/cert.pem -config certs/localhost.cnf",
     "dev": "nodemon --exec ts-node ./src/httpServer.ts"
   },
   "keywords": [],

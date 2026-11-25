@@ -55,3 +55,53 @@ router.delete(
 );
 
 export default router;
+
+
+
+
+
+
+// 3 BODY (форма):    усе з тіла, але не JSON | обробник як у 1, 
+// різниця лише app.use(express.urlencoded({extended:false})) у httpServer; повторений ключ = масив
+
+// import express, { Request, Response, Router } from "express";
+// import * as AuthenticationService from "../authentication/AuthenticationService";
+
+// const router: Router = express.Router();
+
+// // Form der erwarteten Daten. "unknown", weil auch Formulardaten Arrays liefern können.
+// interface LoginFormBody {
+//     userID?: unknown;
+//     password?: unknown;
+// }
+
+// function sendAuthFailed(res: Response): void {
+//     res.status(401).json({ Error: "Failed to create token: Authentication failed" });
+// }
+
+// // POST /api/abnahme/loginForm  (Content-Type: application/x-www-form-urlencoded)
+// router.post("/loginForm", async (req: Request, res: Response): Promise<void> => {
+//     // Ohne express.urlencoded() in httpServer.ts ist req.body hier undefined.
+//     const body: LoginFormBody = (req.body ?? {}) as LoginFormBody;
+//     const userID: unknown = body.userID;
+//     const password: unknown = body.password;
+
+//     // Auch hier nötig: userID=a&userID=b liefert ein Array, keinen String.
+//     if (typeof userID !== "string" || typeof password !== "string") {
+//         return sendAuthFailed(res);
+//     }
+
+//     try {
+//         const token: string | null = await AuthenticationService.createToken(userID, password);
+//         if (!token) {
+//             return sendAuthFailed(res);
+//         }
+//         res.setHeader("Authorization", "Bearer " + token);
+//         res.status(200).json({ Success: "Token created successfully" });
+//     } catch (err: unknown) {
+//         console.error(err);
+//         res.status(500).json({ Error: "Failed to create token: Internal server error" });
+//     }
+// });
+
+// export default router;
