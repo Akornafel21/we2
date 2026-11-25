@@ -148,3 +148,14 @@ export async function updateUser(
     const allowedFields: string[] = requester.isAdministrator ? ADMIN_EDITABLE : SELF_EDITABLE;
     return toResponse(await saveUserChanges(userID, data, allowedFields));
 }
+
+
+
+
+
+
+
+
+// 4 У тілі багато полів, які є атрибутами сутності («anlegen», «erstellen» чогось)
+// мішок, поля не чіпаю | res.status(201).json(await Service.create(req.body)) — без interface, 
+// перевірка білим списком у сервісі
