@@ -3,12 +3,13 @@ import { DegreeCourse } from "../degreeCourse/DegreeCourseModel";
 import { User } from "../user/UserModel";
 import { TokenPayload } from "../authentication/AuthenticationService";
 import { DegreeCourseApplication, IDegreeCourseApplication } from "./DegreeCourseApplicationModel";
-import { ForbiddenError, NotFoundError, ValidationError, rethrowAsValidationError } from "../../utils/Errors";
+import { ForbiddenError, NotFoundError, ValidationError, ConflictError, rethrowAsValidationError } from "../../utils/Errors";
 
 type ApplicationDocument = HydratedDocument<IDegreeCourseApplication>;
 
-const SELF_EDITABLE: string[] = ["degreeCourseID", "targetPeriodYear", "targetPeriodShortName"];
-const ADMIN_EDITABLE: string[] = [...SELF_EDITABLE, "applicantUserID"];
+const SELF_CREATABLE: string[] = ["degreeCourseID", "targetPeriodYear", "targetPeriodShortName"];
+const SELF_EDITABLE: string[] = ["targetPeriodYear", "targetPeriodShortName"];
+const ADMIN_EDITABLE: string[] = [...SELF_CREATABLE, "applicantUserID"];
 const FILTERABLE: string[] = ["applicantUserID", "degreeCourseID"];
 
 function toResponse(application: ApplicationDocument) {
@@ -52,6 +53,19 @@ async function ensureReferencesExist(application: ApplicationDocument, isNew: bo
     }
 }
 
+async function ensureNoDuplicate(application: ApplicationDocument): Promise<void> {
+    const duplicate = await DegreeCourseApplication.exists({
+        _id: { $ne: application._id },
+        applicantUserID: application.applicantUserID,
+        degreeCourseID: application.degreeCourseID,
+        targetPeriodYear: application.targetPeriodYear,
+        targetPeriodShortName: application.targetPeriodShortName,
+    });
+    if (duplicate) {
+        throw new ConflictError("An application for this user, degree course and semester already exists");
+    }
+}
+
 function applyFields(
     application: ApplicationDocument,
     data: Record<string, unknown>,
@@ -76,8 +90,10 @@ function applyFields(
 
 export async function createApplication(data: Record<string, unknown>, requester: TokenPayload) {
     const application: ApplicationDocument = new DegreeCourseApplication({ applicantUserID: requester.userID });
-    applyFields(application, data, requester.isAdministrator ? ADMIN_EDITABLE : SELF_EDITABLE);
+    applyFields(application, data, requester.isAdministrator ? ADMIN_EDITABLE : SELF_CREATABLE);
     await ensureReferencesExist(application, true);
+    await application.validate().catch(rethrowAsValidationError);
+    await ensureNoDuplicate(application);
     await application.save().catch(rethrowAsValidationError);
     return toResponse(application);
 }
@@ -114,6 +130,8 @@ export async function updateApplication(id: string, data: Record<string, unknown
     checkOwnerOrAdmin(application, requester);
     applyFields(application, data, requester.isAdministrator ? ADMIN_EDITABLE : SELF_EDITABLE);
     await ensureReferencesExist(application, false);
+    await application.validate().catch(rethrowAsValidationError);
+    await ensureNoDuplicate(application);
     await application.save().catch(rethrowAsValidationError);
     return toResponse(application);
 }

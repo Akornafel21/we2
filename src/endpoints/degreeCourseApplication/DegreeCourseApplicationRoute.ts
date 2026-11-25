@@ -14,7 +14,6 @@ router.get("/", isAuthenticated, isAdministrator, async (req: Request, res: Resp
     }
 });
 
-// Muss VOR "/:id" stehen, sonst würde Express "myApplications" als id interpretieren
 router.get("/myApplications", isAuthenticated, async (_req: Request, res: Response): Promise<void> => {
     const requester: TokenPayload = res.locals.user as TokenPayload;
     try {
